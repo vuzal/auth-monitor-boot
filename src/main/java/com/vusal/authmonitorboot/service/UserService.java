@@ -36,7 +36,7 @@ public class UserService {
     @Transactional
     public void blockUser(Long userId){
         User user=userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found with id: "+userId));
         user.setBlocked(true);
         userRepository.save(user);
     }
