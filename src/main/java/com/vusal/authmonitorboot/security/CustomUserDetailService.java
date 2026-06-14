@@ -4,12 +4,15 @@ import com.vusal.authmonitorboot.entity.User;
 import com.vusal.authmonitorboot.exception.UserAccountBlockedException;
 import com.vusal.authmonitorboot.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +32,7 @@ public class CustomUserDetailService implements UserDetailsService {
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getUsername())
                 .password(user.getPassword())
-                .authorities(new ArrayList<>())
+                .authorities(Collections.singletonList(new SimpleGrantedAuthority("ROLE_"+user.getRole())))
                 .accountLocked(user.isBlocked())
                 .build();
     }

@@ -30,6 +30,10 @@ public class User {
     @Column(name = "created_at")
     LocalDate createdAt;
 
+    @Column(nullable = false)
+    @Builder.Default
+    String role="USER";
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDate.now();
