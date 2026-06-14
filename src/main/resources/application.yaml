@@ -1,3 +1,18 @@
 spring:
   application:
     name: auth-monitor-boot
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/auth_monitor_db
+    username: vussl
+    password: auth_monitor_2306
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
