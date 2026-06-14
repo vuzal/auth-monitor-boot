@@ -1,6 +1,7 @@
 package com.vusal.authmonitorboot.service;
 
 import com.vusal.authmonitorboot.entity.User;
+import com.vusal.authmonitorboot.exception.ResourceAlreadyExistsException;
 import com.vusal.authmonitorboot.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +19,10 @@ public class UserService {
     @Transactional
     public User registerUser(User user){
         if (userRepository.existsByUsername(user.getUsername())){
-            throw new RuntimeException("This username is already in use");
+            throw new ResourceAlreadyExistsException("Username already taken!");
         }
         if (userRepository.existsByEmail(user.getEmail())){
-            throw new RuntimeException("This email is already in use");
+            throw new ResourceAlreadyExistsException("Email already registered!");
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));

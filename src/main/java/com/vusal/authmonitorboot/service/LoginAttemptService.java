@@ -11,15 +11,15 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class LoginAttemptService {
-    private  final LoginAttemptRepository loginAttemptRepository;
+    private final LoginAttemptRepository loginAttemptRepository;
 
     /**
      * Hər bir giriş cəhdini (Uğurlu/Uğursuz) asinxron və ya birbaşa qeyd etmək üçün
      */
     @Transactional
-    public void  logAttempt(String username, String ipAddress, boolean isSuccessful, String failReason) {
+    public void logAttempt(String username, String ipAddress, boolean isSuccessful, String failReason) {
 
-        LoginAttempt loginAttempt=LoginAttempt.builder()
+        LoginAttempt loginAttempt = LoginAttempt.builder()
                 .username(username)
                 .ipAddress(ipAddress)
                 .isSuccessful(isSuccessful)
@@ -32,7 +32,7 @@ public class LoginAttemptService {
     /**
      * Son 100 loqu idarəetmə paneli üçün gətirir
      */
-    public List<LoginAttempt> getRecentLogs(){
+    public List<LoginAttempt> getRecentLogs() {
         return loginAttemptRepository.findTop100ByOrderByAttemptTimeDesc();
     }
 
