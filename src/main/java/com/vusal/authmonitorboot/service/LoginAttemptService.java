@@ -6,6 +6,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -22,6 +23,7 @@ public class LoginAttemptService {
         LoginAttempt loginAttempt = LoginAttempt.builder()
                 .username(username)
                 .ipAddress(ipAddress)
+                .attemptTime(LocalDateTime.now())
                 .isSuccessful(isSuccessful)
                 .failReason(failReason)
                 .build();

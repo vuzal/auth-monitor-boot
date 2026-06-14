@@ -39,13 +39,13 @@ public class AuthenticationController {
         try {
             // 1. Spring Security vasitəsilə username və password yoxlanılır
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(requestDto.getUserName(),requestDto.getPassword())
+                    new UsernamePasswordAuthenticationToken(requestDto.getUsername(),requestDto.getPassword())
             );
-            UserDetails userDetails=userDetailService.loadUserByUsername(requestDto.getUserName());
+            UserDetails userDetails=userDetailService.loadUserByUsername(requestDto.getUsername());
             String accessToken=jwtService.generateAccessToken(userDetails);
             RefreshToken refreshToken=refreshTokenService.createRefreshToken(userDetails.getUsername());
 
-            loginAttemptService.logAttempt(requestDto.getUserName(),ipAddress,true,null);
+            loginAttemptService.logAttempt(requestDto.getUsername(),ipAddress,true,null);
             return ResponseEntity.ok(JwtResponseDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken.getToken())
@@ -53,7 +53,7 @@ public class AuthenticationController {
                     .build()
             );
         }catch (AuthenticationException e) {
-            loginAttemptService.logAttempt(requestDto.getUserName(), ipAddress, false,e.getMessage());
+            loginAttemptService.logAttempt(requestDto.getUsername(), ipAddress, false,e.getMessage());
             throw e;
         }
     }

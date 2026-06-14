@@ -21,13 +21,16 @@ public class LoginAttempt {
     String username; // Daxil edilməyə çalışılan istifadəçi adı
     @Column(name = "id_address")
     String ipAddress; // Sorğunun gəldiyi IP ünvanı
-    @Column(name = "attempt_time")
+    @Column(name = "attempt_time",updatable = false,nullable = false)
     LocalDateTime attemptTime;
     @Column(name ="is_successful")
     boolean isSuccessful; // Giriş uğurludur (true) yoxsa uğursuz (false)
     @Column(name="fail_reason")
     String failReason; // Uğursuzdursa səbəbi (məs: "Bad credentials", "User blocked")
 
-
+   @PrePersist
+    protected void onCreate(){
+       attemptTime = LocalDateTime.now();
+   }
 
 }
