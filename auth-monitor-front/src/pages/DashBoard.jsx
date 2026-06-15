@@ -5,6 +5,10 @@ import {
   Users, ShieldCheck, ShieldAlert, Activity,
   UserX, UserCheck, LogOut, RefreshCw
 } from 'lucide-react';
+import { 
+  ResponsiveContainer, AreaChart, Area, 
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend 
+} from 'recharts';
 
 const Dashboard = () => {
   const { logout, user } = useContext(AuthContext);
@@ -44,6 +48,32 @@ const Dashboard = () => {
       setIsRefreshing(false);
     }
   };
+
+  // Loqları qrafik üçün qruplaşdıran funksiya (Saatlıq trend)
+  const prepareChartData = () => {
+    const timeMap = {};
+    
+    // Son loqları tərsinə çeviririk ki, xronoloji ardıcıllıq düzgün olsun (köhnədən yeniyə)
+    [...logs].reverse().forEach(log => {
+      const date = new Date(log.attemptTime);
+      // Saat və dəqiqə formatı (Məsələn: 14:30)
+      const timeStr = `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+      
+      if (!timeMap[timeStr]) {
+        timeMap[timeStr] = { time: timeStr, Uğurlu: 0, Uğursuz: 0 };
+      }
+      
+      if (log.successful) {
+        timeMap[timeStr].Uğurlu += 1;
+      } else {
+        timeMap[timeStr].Uğursuz += 1;
+      }
+    });
+    
+    return Object.values(timeMap);
+  };
+
+  const chartData = prepareChartData();
 
   useEffect(() => {
     fetchData(); // İlk yüklənmədə normal işləsin
@@ -121,9 +151,65 @@ const Dashboard = () => {
         <div className="bg-slate-800 p-5 rounded-2xl border border-slate-700/50 flex items-center justify-between shadow-sm">
           <div>
             <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Uğursuz Cəhdlər</p>
-            <h3 className="text-2xl font-bold mt-1 text-red-400">{stats.failedAttempts}</h3>
+            <h3 className="text-2xl font-bold mt-1 text-red-400">{stats.failedAttempts !== undefined && stats.failedAttempts !== null 
+        ? stats.failedAttempts 
+        : (stats.totalLoginAttempts - stats.successAttempts || 0)}</h3>
           </div>
           <div className="p-3 bg-red-500/10 text-red-400 rounded-xl"><ShieldAlert size={22} /></div>
+        </div>
+      </div>
+
+      {/* 📊 Canlı Analitika Qrafiki */}
+      <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700/50 mb-8 shadow-sm">
+        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+          <Activity size={18} className="text-indigo-400" />
+          Giriş Cəhdlərinin Canlı Trendi
+        </h2>
+        <div className="w-full h-[300px]">
+          {chartData.length === 0 ? (
+            <div className="h-full flex items-center justify-center text-slate-500 text-sm">
+              Qrafiki rəndərləmək üçün hələ yetərli loq məlumatı yoxdur.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorSuccess" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                  </linearGradient>
+                  <linearGradient id="colorFailed" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
+                <XAxis dataKey="time" stroke="#94a3b8" fontSize={12} tickLine={false} />
+                <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} allowDecimals={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#1e293b', borderColor: '#475569', borderRadius: '12px', color: '#f8fafc' }}
+                  itemStyle={{ fontSize: '13px' }}
+                />
+                <Legend wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
+                <Area 
+                  type="monotone" 
+                  dataKey="Uğurlu" 
+                  stroke="#10b981" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorSuccess)" 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="Uğursuz" 
+                  stroke="#ef4444" 
+                  strokeWidth={2}
+                  fillOpacity={1} 
+                  fill="url(#colorFailed)" 
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </div>
       </div>
 
