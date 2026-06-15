@@ -16,16 +16,16 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Bizim ağıllı API instansiyası ilə backend-ə sorğu atırıq
+      // Backend login endpointinə sorğu atırıq
       const res = await API.post('/auth/login', { username, password });
       
       if (res.status === 200) {
         login(res.data);
         
-        // 🛠️ MÜDAFİƏ: Gələn rolu string-ə çevirib, böyük hərflərlə "ADMIN" sözünü axtarırıq
+        // MÜDAFİƏ: Gələn rolu təhlükəsiz şəkildə string-ə çevirib yoxlayırıq
         const userRole = String(res.data?.role || "").toUpperCase();
         
-        console.log("Backend-dən gələn real rol:", userRole);
+        console.log("Real role from backend:", userRole);
 
         if (userRole.includes("ADMIN")) {
           window.location.href = "/dashboard";
@@ -34,15 +34,15 @@ const Login = () => {
         }
       }
     } catch (err) {
-      // Sənin dediyin ssenarini (500 və ya 401 gəlməsindən asılı olmayaraq) idarə edirik
+      // Backend-dən gələn ingiliscə xəta mesajlarını idarə edirik
       const backendMessage = err.response?.data?.message || "";
       
       if (backendMessage.includes("Bad credentials")) {
-        setError("İstifadəçi adı və ya şifrə yanlışdır!");
+        setError("Invalid username or password!");
       } else if (backendMessage.includes("temporarily blocked")) {
-        setError("Bu IP ünvanı çoxlu uğursuz cəhdə görə 5 dəqiqəlik BLOKLANIB!");
+        setError("This IP address is temporarily blocked due to too many failed attempts!");
       } else {
-        setError("Sistemdə gözlənilməyən xəta baş verdi. Yenidən yoxlayın.");
+        setError("An unexpected system error occurred. Please try again.");
       }
     } finally {
       setLoading(false);
@@ -56,8 +56,8 @@ const Login = () => {
           <div className="inline-flex p-3 bg-indigo-500/10 rounded-xl text-indigo-400 mb-3">
             <Lock size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-white">Xoş Gəldiniz</h2>
-          <p className="text-slate-400 text-sm mt-1">Sistemə daxil olmaq üçün məlumatları doldurun</p>
+          <h2 className="text-2xl font-bold text-white">Welcome Back</h2>
+          <p className="text-slate-400 text-sm mt-1">Please enter your credentials to sign in</p>
         </div>
 
         {error && (
@@ -69,7 +69,7 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">İstifadəçi Adı</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Username</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
                 <User size={18} />
@@ -80,13 +80,13 @@ const Login = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition-colors text-sm"
-                placeholder="İstifadəçi adınızı yazın"
+                placeholder="Enter your username"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1.5">Şifrə</label>
+            <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
                 <Lock size={18} />
@@ -100,6 +100,16 @@ const Login = () => {
                 placeholder="••••••••"
               />
             </div>
+            
+            {/* 🛠️ YENİ: Şifrəmi Unutdum Linki (Tam standartlara uyğun sağ küncdə) */}
+            <div className="flex justify-end mt-2 text-xs">
+              <a 
+                href="/forgot-password" 
+                className="text-indigo-400 hover:underline transition-colors font-medium"
+              >
+                Forgot Password?
+              </a>
+            </div>
           </div>
 
           <button
@@ -107,14 +117,14 @@ const Login = () => {
             disabled={loading}
             className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 rounded-lg transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed mt-2"
           >
-            {loading ? 'Yoxlanılır...' : 'Giriş Et'}
+            {loading ? 'Verifying...' : 'Sign In'}
           </button>
         </form>
 
         <div className="text-center mt-6 text-sm text-slate-400">
-          Hesabınız yoxdur?{' '}
+          Don't have an account?{' '}
           <a href="/register" className="text-indigo-400 hover:underline">
-            Qeydiyyatdan keçin
+            Sign up now
           </a>
         </div>
       </div>
