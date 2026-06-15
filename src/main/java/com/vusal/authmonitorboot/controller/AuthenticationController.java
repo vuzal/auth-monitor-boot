@@ -4,7 +4,10 @@ import com.vusal.authmonitorboot.dto.JwtResponseDto;
 import com.vusal.authmonitorboot.dto.LoginRequestDto;
 import com.vusal.authmonitorboot.dto.TokenRefreshRequestDto;
 import com.vusal.authmonitorboot.entity.RefreshToken;
+import com.vusal.authmonitorboot.entity.User;
+import com.vusal.authmonitorboot.exception.UserNotFoundException;
 import com.vusal.authmonitorboot.repository.RefreshTokenRepository;
+import com.vusal.authmonitorboot.repository.UserRepository;
 import com.vusal.authmonitorboot.security.CustomUserDetailService;
 import com.vusal.authmonitorboot.security.JwtService;
 import com.vusal.authmonitorboot.service.BruteForceProtectionService;
@@ -27,20 +30,21 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
-    private  final AuthenticationManager authenticationManager;
-    private  final JwtService jwtService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final RefreshTokenRepository refreshTokenRepository;
-    private  final CustomUserDetailService userDetailService;
+    private final CustomUserDetailService userDetailService;
     private final LoginAttemptService loginAttemptService;
-    private  final BruteForceProtectionService bruteForceProtectionService;
+    private final BruteForceProtectionService bruteForceProtectionService;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDto> authenticate(@RequestBody LoginRequestDto requestDto, HttpServletRequest request) {
-        String ipAddress=request.getRemoteAddr(); // Sorğunun gəldiyi IP-ni tuturuq
+        String ipAddress = request.getRemoteAddr(); // Sorğunun gəldiyi IP-ni tuturuq
 
         if (bruteForceProtectionService.isIpBlocked(ipAddress)) {
-            loginAttemptService.logAttempt(requestDto.getUsername(),ipAddress, false,"IP Blocked - Too many attempts");
+            loginAttemptService.logAttempt(requestDto.getUsername(), ipAddress, false, "IP Blocked - Too many attempts");
 
             throw new LockedException("Your IP is temporarily blocked due to many failed attempts, Please try again after 5 minutes");
         }
@@ -48,33 +52,37 @@ public class AuthenticationController {
         try {
             // 1. Spring Security vasitəsilə username və password yoxlanılır
             authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(requestDto.getUsername(),requestDto.getPassword())
+                    new UsernamePasswordAuthenticationToken(requestDto.getUsername(), requestDto.getPassword())
             );
-            UserDetails userDetails=userDetailService.loadUserByUsername(requestDto.getUsername());
-            String accessToken=jwtService.generateAccessToken(userDetails);
-            RefreshToken refreshToken=refreshTokenService.createRefreshToken(userDetails.getUsername());
+            UserDetails userDetails = userDetailService.loadUserByUsername(requestDto.getUsername());
+            String accessToken = jwtService.generateAccessToken(userDetails);
+            RefreshToken refreshToken = refreshTokenService.createRefreshToken(userDetails.getUsername());
 
-            loginAttemptService.logAttempt(requestDto.getUsername(),ipAddress,true,null);
+            User dbUser = userRepository.findByUsername(requestDto.getUsername())
+                    .orElseThrow(() -> new UserNotFoundException("User not found"));
+            String assignedRole = dbUser.getRole() != null ? dbUser.getRole() : "USER";
+            loginAttemptService.logAttempt(requestDto.getUsername(), ipAddress, true, null);
             return ResponseEntity.ok(JwtResponseDto.builder()
                     .accessToken(accessToken)
                     .refreshToken(refreshToken.getToken())
                     .username(userDetails.getUsername())
+                    .role(assignedRole)
                     .build()
             );
-        }catch (AuthenticationException e) {
-            loginAttemptService.logAttempt(requestDto.getUsername(), ipAddress, false,e.getMessage());
+        } catch (AuthenticationException e) {
+            loginAttemptService.logAttempt(requestDto.getUsername(), ipAddress, false, e.getMessage());
             throw e;
         }
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<JwtResponseDto> refreshToken(@RequestBody TokenRefreshRequestDto requestDto){
+    public ResponseEntity<JwtResponseDto> refreshToken(@RequestBody TokenRefreshRequestDto requestDto) {
         return refreshTokenRepository.findByToken(requestDto.getRefreshToken())
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    UserDetails userDetails=userDetailService.loadUserByUsername(user.getUsername());
-                    String accessToken=jwtService.generateAccessToken(userDetails);
+                    UserDetails userDetails = userDetailService.loadUserByUsername(user.getUsername());
+                    String accessToken = jwtService.generateAccessToken(userDetails);
 
                     return ResponseEntity.ok(JwtResponseDto.builder()
                             .accessToken(accessToken)
@@ -82,6 +90,6 @@ public class AuthenticationController {
                             .username(userDetails.getUsername())
                             .build());
                 })
-                .orElseThrow(()->new RuntimeException("Refresh token is not in database!"));
+                .orElseThrow(() -> new RuntimeException("Refresh token is not in database!"));
     }
 }

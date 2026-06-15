@@ -16,28 +16,35 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfig {
-    private  final CustomUserDetailService userDetailService;
-    private  final PasswordEncoder passwordEncoder;
+    private final CustomUserDetailService userDetailService;
+    private final PasswordEncoder passwordEncoder;
     private final JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
         http
+
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 //REST API-larda sessiya saxlanmadığı və JWT istifadə olunacağı üçün CSRF ləğv edilir
                 .csrf(AbstractHttpConfigurer::disable)
 
-                .authorizeHttpRequests(auth->auth
-                        .requestMatchers("/api/users/register","/api/auth/login","/api/auth/refresh").permitAll()
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/users/register", "/api/auth/login", "/api/auth/refresh").permitAll()
                         .anyRequest().authenticated()
                 )
 
-                .sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .exceptionHandling(exception -> exception
                         // Əgər istifadəçi anonimdirsə (token göndərməyibsə), avtomatik 401 Unauthorized qaytar
@@ -45,6 +52,12 @@ public class SecurityConfig {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
                             response.getWriter().write("{\"error\": \"Unauthorized\", \"message\": \"Full authentication is required to access this resource.\"}");
+                        })
+
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\": \"Forbidden\", \"message\": \"You do not have permission to access this resource!\"}");
                         })
                 )
                 // Detal: Bizim xüsusi JWT filtrimizi standart UsernamePasswordAuthenticationFilter-dən ÖNCƏ icra olunması üçün zəncirə daxil edirik
@@ -56,5 +69,28 @@ public class SecurityConfig {
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
 
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+
+        // React tətbiqimizin işlədiyi portu rəsmi olaraq qeydiyyata alırıq
+        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+
+        // İcazə verilən HTTP metodları
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // Hər növ HTTP başlığına (Header) icazə veririk (Authorization, Content-Type və s.)
+        configuration.setAllowedHeaders(List.of("*"));
+
+        // Tokenlərin brauzer tərəfindən oxunması və cookie/credentials dəstəyi üçün mütləq true olmalıdır
+        configuration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Bu tənzimləməni bütün API yollarına (/api/**) şamil edirik
+        source.registerCorsConfiguration("/**", configuration);
+
+        return source;
     }
 }

@@ -1,6 +1,7 @@
 package com.vusal.authmonitorboot.service;
 
 import com.vusal.authmonitorboot.dto.DashBoardStatsDto;
+import com.vusal.authmonitorboot.entity.LoginAttempt;
 import com.vusal.authmonitorboot.entity.User;
 import com.vusal.authmonitorboot.exception.UserNotFoundException;
 import com.vusal.authmonitorboot.repository.LoginAttemptRepository;
@@ -22,7 +23,7 @@ public class AdminService {
         long totalAttempts=loginAttemptRepository.count();
 
         long successAttempts=loginAttemptRepository.findAll().stream()
-                .filter(l->l.isSuccessful()).count();
+                .filter(LoginAttempt::isSuccessful).count();
         long failedAttempts=totalAttempts-successAttempts;
 
         return DashBoardStatsDto.builder()

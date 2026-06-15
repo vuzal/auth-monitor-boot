@@ -1,5 +1,6 @@
 package com.vusal.authmonitorboot.entity;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -22,6 +23,7 @@ public class LoginAttempt {
     @Column(name = "id_address")
     String ipAddress; // Sorğunun gəldiyi IP ünvanı
     @Column(name = "attempt_time",updatable = false,nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
     LocalDateTime attemptTime;
     @Column(name ="is_successful")
     boolean isSuccessful; // Giriş uğurludur (true) yoxsa uğursuz (false)
