@@ -7,12 +7,14 @@ import com.vusal.authmonitorboot.entity.RefreshToken;
 import com.vusal.authmonitorboot.repository.RefreshTokenRepository;
 import com.vusal.authmonitorboot.security.CustomUserDetailService;
 import com.vusal.authmonitorboot.security.JwtService;
+import com.vusal.authmonitorboot.service.BruteForceProtectionService;
 import com.vusal.authmonitorboot.service.LoginAttemptService;
 import com.vusal.authmonitorboot.service.RefreshTokenService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,10 +33,17 @@ public class AuthenticationController {
     private final RefreshTokenRepository refreshTokenRepository;
     private  final CustomUserDetailService userDetailService;
     private final LoginAttemptService loginAttemptService;
+    private  final BruteForceProtectionService bruteForceProtectionService;
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDto> authenticate(@RequestBody LoginRequestDto requestDto, HttpServletRequest request) {
         String ipAddress=request.getRemoteAddr(); // Sorğunun gəldiyi IP-ni tuturuq
+
+        if (bruteForceProtectionService.isIpBlocked(ipAddress)) {
+            loginAttemptService.logAttempt(requestDto.getUsername(),ipAddress, false,"IP Blocked - Too many attempts");
+
+            throw new LockedException("Your IP is temporarily blocked due to many failed attempts, Please try again after 5 minutes");
+        }
 
         try {
             // 1. Spring Security vasitəsilə username və password yoxlanılır

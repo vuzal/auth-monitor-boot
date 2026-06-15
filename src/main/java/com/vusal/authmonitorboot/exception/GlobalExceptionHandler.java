@@ -5,6 +5,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import org.springframework.security.authentication.LockedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -48,6 +49,19 @@ public class GlobalExceptionHandler {
         );
         return new ResponseEntity<>(error, HttpStatus.FORBIDDEN);
     }
+
+    @ExceptionHandler(LockedException.class)
+    public  ResponseEntity<ErrorResponse> handleLockedException(LockedException ex, HttpServletRequest request){
+        ErrorResponse error=new ErrorResponse(
+                LocalDateTime.now(),
+                HttpStatus.LOCKED.value(),
+                "Locked",
+                ex.getMessage(),
+                request.getRequestURI()
+        );
+        return new ResponseEntity<>(error, HttpStatus.LOCKED);
+    }
+
     @ExceptionHandler(TokenWasExpiredException.class)
     public ResponseEntity<ErrorResponse> handleTokenWasExpiredException(TokenWasExpiredException ex, HttpServletRequest request){
         ErrorResponse error= new ErrorResponse(
